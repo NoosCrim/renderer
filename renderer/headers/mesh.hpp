@@ -36,7 +36,7 @@ namespace render
         {
             glVertexArrayAttribFormat(name(), POS_IDX, 3, GL_FLOAT, GL_FALSE, 0); // position
             glVertexArrayAttribBinding(name(), POS_IDX, POS_BIND);
-            enableAttrib(POS_BIND);
+            EnableAttrib(POS_BIND);
 
             glVertexArrayAttribFormat (name(), COLOR_IDX, 4, GL_FLOAT, GL_FALSE, 0); // color
             glVertexArrayAttribBinding(name(), COLOR_IDX, COLOR_BIND);
@@ -59,7 +59,7 @@ namespace render
             glVertexArrayAttribBinding(name(), INSTANCE_TRANSFORM_COL2_IDX, INSTANCE_TRANSFORM_BIND);
             glVertexArrayAttribBinding(name(), INSTANCE_TRANSFORM_COL3_IDX, INSTANCE_TRANSFORM_BIND);
             glVertexArrayBindingDivisor(name(), INSTANCE_TRANSFORM_BIND, 1);
-            enableAttrib(INSTANCE_TRANSFORM_BIND);
+            EnableAttrib(INSTANCE_TRANSFORM_BIND);
         }
     };
 
@@ -79,66 +79,65 @@ namespace render
             activeVertices(vertCount)
         {
             vertices = TypedSharedBuffer<glm::vec3>(activeVertices, initialVertsData);
-            VAO.bindVertexBuffer(MeshVAO::POS_BIND, vertices, 0, sizeof(glm::vec3));
+            VAO.BindVertexBuffer(MeshVAO::POS_BIND, vertices, 0, sizeof(glm::vec3));
         }
         void initColors(glm::vec4 *initialData)
         {
             colors = TypedSharedBuffer<glm::vec4>(vertices.count());
-            VAO.enableAttrib(MeshVAO::COLOR_IDX);
-            VAO.bindVertexBuffer(MeshVAO::COLOR_BIND, colors, 0, sizeof(glm::vec4));
+            VAO.EnableAttrib(MeshVAO::COLOR_IDX);
+            VAO.BindVertexBuffer(MeshVAO::COLOR_BIND, colors, 0, sizeof(glm::vec4));
         }
         void deinitColors()
         {
             colors = TypedSharedBuffer<glm::vec4>();
-            VAO.disableAttrib(MeshVAO::COLOR_IDX);
+            VAO.BindVertexBuffer(MeshVAO::COLOR_IDX);
         }
         void initNormals(glm::vec3 *initialData)
         {
             normals = TypedSharedBuffer<glm::vec3>(vertices.count());
-            VAO.enableAttrib(MeshVAO::NORMAL_IDX);
-            VAO.bindVertexBuffer(MeshVAO::NORMAL_BIND, vertices, 0, sizeof(glm::vec3));
+            VAO.EnableAttrib(MeshVAO::NORMAL_IDX);
+            VAO.BindVertexBuffer(MeshVAO::NORMAL_BIND, vertices, 0, sizeof(glm::vec3));
         }
         void deinitNormals()
         {
             normals = TypedSharedBuffer<glm::vec3>();
-            VAO.disableAttrib(MeshVAO::NORMAL_IDX);
+            VAO.DisableAttrib(MeshVAO::NORMAL_IDX);
         }
         void initTangents(glm::vec3 *initialData)
         {
             tangents = TypedSharedBuffer<glm::vec3>(vertices.count());
-            VAO.enableAttrib(MeshVAO::TANGENT_IDX);
-            VAO.bindVertexBuffer(MeshVAO::TANGENT_BIND, vertices, 0, sizeof(glm::vec3));
+            VAO.EnableAttrib(MeshVAO::TANGENT_IDX);
+            VAO.BindVertexBuffer(MeshVAO::TANGENT_BIND, vertices, 0, sizeof(glm::vec3));
         }
         void deinitTangents()
         {
             tangents = TypedSharedBuffer<glm::vec3>();
-            VAO.disableAttrib(MeshVAO::TANGENT_IDX);
+            VAO.DisableAttrib(MeshVAO::TANGENT_IDX);
         }
         void initUVs(glm::vec2 *initialData)
         {
             UVs = TypedSharedBuffer<glm::vec2>(vertices.count());
-            VAO.enableAttrib(MeshVAO::UV_IDX);
-            VAO.bindVertexBuffer(MeshVAO::UV_BIND, vertices, 0, sizeof(glm::vec2));
+            VAO.EnableAttrib(MeshVAO::UV_IDX);
+            VAO.BindVertexBuffer(MeshVAO::UV_BIND, vertices, 0, sizeof(glm::vec2));
         }
         void deinitUVs()
         {
             UVs = TypedSharedBuffer<glm::vec2>();
-            VAO.disableAttrib(MeshVAO::UV_IDX);
+            VAO.DisableAttrib(MeshVAO::UV_IDX);
         }
         void initElements(GLuint indexCount, GLuint *initialData)
         {
             elements = TypedSharedBuffer<GLuint>(indexCount, initialData);
-            VAO.bindElementBuffer(elements);
+            VAO.BindVertexBuffer(elements);
         }
         void deinitElements()
         {
             elements = TypedSharedBuffer<GLuint>();
-            VAO.bindElementBuffer(0);
+            VAO.BindVertexBuffer(0);
         }
         void Draw(ConstSharedBuffer instanceBuffer)
         {
-            VAO.bindVertexBuffer(MeshVAO::INSTANCE_TRANSFORM_BIND, instanceBuffer, 0, sizeof(glm::mat4));
-            
+            VAO.BindVertexBuffer(MeshVAO::INSTANCE_TRANSFORM_BIND, instanceBuffer, 0, sizeof(glm::mat4));
         }
     };
 }
