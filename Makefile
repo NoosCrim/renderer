@@ -5,4 +5,5 @@ clear:
 	rm -rf $(GLOBAL_OUT_DIR)*
 
 include glsl_preprocess/Makefile
+include OpenGL_utils/Makefile
 include renderer/Makefile
