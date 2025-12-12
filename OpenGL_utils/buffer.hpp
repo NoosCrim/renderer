@@ -5,118 +5,170 @@
 #include <cstdio>
 namespace render
 {
-    class Buffer
+    class SharedBuffer;
+    class ConstSharedBuffer
     {
     private:
-        GLuint _size = 0;
-        GLuint _name = 0;
-        void* _data = nullptr;
-    public:
-        Buffer() = default;
-        Buffer(GLsizeiptr size, void* initialData = nullptr) :
-            _size(size)
+        class __Buffer
         {
-            constexpr GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT;
-            glGenBuffers(1, &_name);
-            if(!_name)
-            {
-                std::fputs("Failed to generate OpenGL buffer!\n", stderr);
-                exit(EXIT_FAILURE);
-            }
-            glNamedBufferStorage(_name, _size, initialData, flags);
-            _data = glMapNamedBufferRange(_name, 0, _size, flags);
-            if(!_data)
-            {
-                std::fputs("Failed to map OpenGL buffer!\n", stderr);
-                glDeleteBuffers(1, &_name);
-                _name = 0;
-                exit(EXIT_FAILURE);
-            }
-        }
-        
-        Buffer(const Buffer&) = delete;
-        Buffer& operator=(const Buffer&) = delete;
+            friend class __BufferInterface;
+            void* _data = nullptr;
+            GLuint _size = 0;
+            GLuint _name = 0;
+            mutable GLuint _refCount = 0;
+        public:
+            __Buffer(const __Buffer&) = delete;
+            __Buffer& operator=(const __Buffer&) = delete;
 
-        Buffer(Buffer&& other) noexcept
-            : _size(other._size), _name(other._name), _data(other._data)
-        {
-            other._size = 0;
-            other._name = 0;
-            other._data = nullptr;
-        }
-        Buffer& operator=(Buffer&& other) noexcept
-        {
-            if (this != &other)
+            __Buffer(GLsizeiptr size, void* initialData = nullptr);
+            __Buffer(__Buffer&& other) noexcept;
+            __Buffer& operator=(__Buffer&& other) noexcept;
+            ~__Buffer();
+            inline void Aquire() const
             {
-                if(_name)
-                {
-                    glUnmapNamedBuffer(_name);
-                    glDeleteBuffers(1, &_name);
-                }
-                _size = other._size;
-                _name = other._name;
-                _data = other._data;
-                other._size = 0;
-                other._name = 0;
-                other._data = nullptr;
+                ++_refCount;
             }
-            return *this;
-        }
-        ~Buffer()
-        {
-            if(_name)
+            inline void Release() const
             {
-                glUnmapNamedBuffer(_name);
-                glDeleteBuffers(1, &_name);
+                if(--_refCount == 0) delete this;
             }
-        }
-        const void* data() const
+            inline const void* data() const
+            {
+                return _data;
+            }
+            inline void* data()
+            {
+                return _data;
+            }
+            inline operator GLuint() const
+            {
+                return _name;
+            }
+            inline operator bool() const
+            {
+                return _name;
+            }
+            inline GLuint size() const
+            {
+                return _size;
+            }
+            inline GLuint name() const
+            {
+                return _name;
+            }
+        };
+    protected:
+        __Buffer *buffer = nullptr;
+    public:
+        ConstSharedBuffer() = default;
+        ConstSharedBuffer(const ConstSharedBuffer &other);
+        ConstSharedBuffer& operator=(const ConstSharedBuffer &other);
+        ConstSharedBuffer(GLsizeiptr size, void* initialData = nullptr);
+        ConstSharedBuffer(ConstSharedBuffer&& other) noexcept;
+        ConstSharedBuffer& operator=(ConstSharedBuffer&& other) noexcept;
+        inline GLuint size() const
         {
-            return _data;
+            return buffer ? buffer->size() : 0;
         }
-        void* data()
+        inline const void* data() const
         {
-            return _data;
+            return buffer ? buffer->data() : nullptr;
         }
-        operator GLuint() const
+        inline GLuint name() const
         {
-            return _name;
+            return buffer ? buffer->name() : 0;
         }
-        GLuint size() const
+        inline operator GLuint() const
         {
-            return _size;
+            return name();
         }
-        GLuint name() const
+        inline operator bool() const
         {
-            return _name;
+            return name();
+        }
+        ~ConstSharedBuffer()
+        {
+            if(buffer) buffer->Release();
         }
     };
+    
     template<typename T>
-    class TypedBuffer : public Buffer
+    class TypedConstSharedBuffer : public ConstSharedBuffer
+    {
+        TypedConstSharedBuffer() = default;
+        TypedConstSharedBuffer(const TypedConstSharedBuffer &other) : ConstSharedBuffer(other) {}
+        TypedConstSharedBuffer& operator=(const TypedConstSharedBuffer &other)
+        {
+            ConstSharedBuffer::operator=(other);
+            return *this;
+        }
+        TypedConstSharedBuffer(GLsizeiptr count, T* initialData = nullptr) : ConstSharedBuffer(count * sizeof(T), initialData) {}
+        TypedConstSharedBuffer(ConstSharedBuffer&& other) noexcept : ConstSharedBuffer(other) {}
+        TypedConstSharedBuffer& operator=(TypedConstSharedBuffer&& other) noexcept
+        {
+            ConstSharedBuffer::operator=(&&other);
+            return *this;
+        }
+
+        inline GLuint count() const
+        {
+            return buffer ? buffer->size()/sizeof(T) : 0;
+        }
+        inline const T* data() const
+        {
+            return buffer ? buffer->data() : nullptr;
+        }
+    };
+
+    class SharedBuffer : public ConstSharedBuffer
     {
     public:
-        TypedBuffer(size_t count, T* initialData = nullptr)
-            : Buffer(sizeof(T) * count, initialData)
-        {}
-        T* data()
+        SharedBuffer() = default;
+        SharedBuffer(const SharedBuffer &other) : ConstSharedBuffer(other) {}
+        SharedBuffer& operator=(const SharedBuffer &other)
         {
-            return static_cast<T*>(Buffer::data());
+            ConstSharedBuffer::operator=(other);
+            return *this;
         }
-        const T* data() const
+        SharedBuffer(GLsizeiptr size, void* initialData = nullptr) : ConstSharedBuffer(size, initialData) {}
+        SharedBuffer(SharedBuffer&& other) noexcept : ConstSharedBuffer(std::move(other)) {}
+        SharedBuffer& operator=(SharedBuffer&& other) noexcept
         {
-            return static_cast<const T*>(Buffer::data());
+            ConstSharedBuffer::operator=(std::move(other));
+            return *this;
         }
-        size_t count() const
+        inline void* data()
         {
-            return Buffer::size() / sizeof(T);
+            return buffer ? buffer->data() : nullptr;
         }
-        const T& operator[](size_t index) const
+    };
+
+    template<typename T>
+    class TypedSharedBuffer : public SharedBuffer
+    {
+    public:
+        TypedSharedBuffer() = default;
+        TypedSharedBuffer(TypedSharedBuffer &other) : SharedBuffer(other) {}
+        TypedSharedBuffer& operator=(TypedSharedBuffer &other)
         {
-            return data()[index];
+            ConstSharedBuffer::operator=(other);
+            return *this;
         }
-        T& operator[](size_t index)
+        TypedSharedBuffer(GLsizeiptr count, T* initialData = nullptr) : SharedBuffer(count * sizeof(T), initialData) {}
+        TypedSharedBuffer(TypedSharedBuffer&& other) noexcept : SharedBuffer(other) {}
+        TypedSharedBuffer& operator=(TypedSharedBuffer&& other) noexcept
         {
-            return data()[index];
+            SharedBuffer::operator=(&&other);
+            return *this;
+        }
+
+        inline GLuint count() const
+        {
+            return buffer ? buffer->size()/sizeof(T) : 0;
+        }
+        inline T* data()
+        {
+            return buffer ? buffer->data() : nullptr;
         }
     };
 }
