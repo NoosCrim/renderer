@@ -24,9 +24,9 @@ namespace renderer
 
         return true;
     }
-	static constexpr const char* ShaderTypeToStr(GLenum type)
+	static constexpr const char* ShaderTypeToStr(GLenum _type)
 	{
-		switch(type)
+		switch(_type)
 		{
 			case GL_VERTEX_SHADER: return "vertex";
 			case GL_FRAGMENT_SHADER: return "fragment";
@@ -40,32 +40,32 @@ namespace renderer
 	class Shader
 	{
 		unsigned int *instanceCount = nullptr;
-		GLuint ID = 0;
-		GLenum type;
+		GLuint _name = 0;
+		GLenum _type;
 
 	public:
 		Shader(){}
-		Shader(GLenum type, const char* const code);
+		Shader(GLenum _type, const char* const code);
 		Shader(const Shader& other);
 		Shader& operator=(const Shader& other);
 		~Shader();
 		
-		static Shader FromFile(GLenum type, const char* const path);
-		inline GLenum GetType() const
+		static Shader FromFile(GLenum _type, const char* const path);
+		inline GLenum type() const
 		{
-			return type;
+			return _type;
 		}
-		inline GLuint GetID() const
+		inline GLuint name() const
 		{
-			return ID;
+			return _name;
 		}
 		inline operator GLuint() const
 		{
-			return ID;
+			return _name;
 		}
 		inline operator bool() const
 		{
-			return ID;
+			return _name;
 		}
 	};
 
@@ -73,7 +73,7 @@ namespace renderer
 	{
 	private:
 		unsigned int *instanceCount = nullptr;
-		GLuint ID = 0;
+		GLuint _name = 0;
 	public:
 		ShaderProgram(){}
 		ShaderProgram(std::initializer_list<Shader> shaders);
@@ -83,42 +83,42 @@ namespace renderer
 
 		void Use() const;
 
-		inline GLuint GetID() const
+		inline GLuint name() const
 		{
-			return ID;
+			return _name;
 		}
 		inline operator GLuint() const
 		{
-			return ID;
+			return _name;
 		}
 		inline operator bool() const
 		{
-			return ID;
+			return _name;
 		}
 	};
 }
 renderer::Shader::Shader(const Shader& other_) :
-	ID(other_.ID),
-	type(other_.type)
+	_name(other_._name),
+	_type(other_._type)
 {
 	if(instanceCount)
 		++*instanceCount;
 }
 renderer::Shader::Shader(GLenum type_, const char* const code_):
-	type(type_)
+	_type(type_)
 {
 	GLint compileStatus, logLen;
-	ID = glCreateShader(type);
-	glShaderSource(ID, 1, &code_, NULL);
-	glCompileShader(ID);
-	glGetShaderiv(ID, GL_COMPILE_STATUS, &compileStatus);
-	glGetShaderiv(ID, GL_INFO_LOG_LENGTH, &logLen);
+	_name = glCreateShader(_type);
+	glShaderSource(_name, 1, &code_, NULL);
+	glCompileShader(_name);
+	glGetShaderiv(_name, GL_COMPILE_STATUS, &compileStatus);
+	glGetShaderiv(_name, GL_INFO_LOG_LENGTH, &logLen);
 	if (!compileStatus)
 	{
 		char log[logLen + 1];
-		glGetShaderInfoLog(ID, logLen + 1, 0, log);
+		glGetShaderInfoLog(_name, logLen + 1, 0, log);
 
-		std::fprintf(stderr, "%s shader compilation error: %s\n", ShaderTypeToStr(type), log);
+		std::fprintf(stderr, "%s shader compilation error: %s\n", ShaderTypeToStr(_type), log);
 		return;
 	}
 }
@@ -128,14 +128,14 @@ renderer::Shader& renderer::Shader::operator=(const Shader& other_)
 	{
 		if(!--*instanceCount)
 		{
-			glDeleteShader(ID);
+			glDeleteShader(_name);
 			delete instanceCount;
 		}
 	}
 
 	instanceCount = other_.instanceCount;
-	ID = other_.ID;
-	type = other_.type;
+	_name = other_._name;
+	_type = other_._type;
 
 	if(instanceCount)
 		++*instanceCount;
@@ -148,7 +148,7 @@ renderer::Shader::~Shader()
 		return;
 	if(--*instanceCount == 0)
 	{
-		glDeleteShader(ID);
+		glDeleteShader(_name);
 		delete instanceCount;
 	}
 	
@@ -167,33 +167,33 @@ renderer::Shader renderer::Shader::FromFile(GLenum type_, const char* const path
 
 renderer::ShaderProgram::ShaderProgram(std::initializer_list<Shader> shaders_)
 {
-	ID = glCreateProgram();
+	_name = glCreateProgram();
 	for(const Shader &shader : shaders_)
 	{
-		glAttachShader(ID, shader);
+		glAttachShader(_name, shader);
 	}
-	glLinkProgram(ID);
+	glLinkProgram(_name);
 
 	GLint linkStatus, logLen;
-	glGetProgramiv(ID, GL_LINK_STATUS, &linkStatus);
-	glGetProgramiv(ID, GL_INFO_LOG_LENGTH, &logLen);
+	glGetProgramiv(_name, GL_LINK_STATUS, &linkStatus);
+	glGetProgramiv(_name, GL_INFO_LOG_LENGTH, &logLen);
 	if (!linkStatus)
 	{
 		char log[logLen + 1];
-		glGetProgramInfoLog(ID, logLen + 1, 0, log);
+		glGetProgramInfoLog(_name, logLen + 1, 0, log);
 		std::fprintf(stderr, "Shader Linking Error: %s\n", log);
-		glDeleteProgram(ID);
-		ID = 0;
+		glDeleteProgram(_name);
+		_name = 0;
 	}
 
-	if(ID)
+	if(_name)
 	{
 		instanceCount = new GLuint(1);
 	}
 }
 
 renderer::ShaderProgram::ShaderProgram(const ShaderProgram& other_) : 
-	ID(other_.ID)
+	_name(other_._name)
 {
 	if(instanceCount)
 		++*instanceCount;
@@ -205,13 +205,13 @@ renderer::ShaderProgram& renderer::ShaderProgram::operator=(const ShaderProgram&
 	{
 		if(!--*instanceCount)
 		{
-			glDeleteProgram(ID);
+			glDeleteProgram(_name);
 			delete instanceCount;
 		}
 	}
 
 	instanceCount = other_.instanceCount;
-	ID = other_.ID;
+	_name = other_._name;
 
 	if(instanceCount)
 		++*instanceCount;
@@ -224,7 +224,7 @@ renderer::ShaderProgram::~ShaderProgram()
 		return;
 	if(--*instanceCount == 0)
 	{
-		glDeleteProgram(ID);
+		glDeleteProgram(_name);
 		delete instanceCount;
 	}
 	
@@ -232,5 +232,5 @@ renderer::ShaderProgram::~ShaderProgram()
 
 void renderer::ShaderProgram::Use() const
 {
-	glUseProgram(ID);
+	glUseProgram(_name);
 }
