@@ -96,6 +96,7 @@ namespace render
         MeshVAO VAO;
     public:
         GLuint activeVertices = 0;
+        TypedSharedBuffer<FragmentShaderBRDF::UniformData> material;
         TypedSharedBuffer<glm::vec3> vertices;
         TypedSharedBuffer<glm::vec4> colors;
         TypedSharedBuffer<glm::vec3> normals;
@@ -162,11 +163,13 @@ namespace render
             elements = TypedSharedBuffer<GLuint>();
             VAO.BindElementBuffer(0);
         }
-        void Draw(TypedConstSharedBuffer<InstanceData> instanceBuffer, GLenum mode = GL_TRIANGLES)
+        void Draw(TypedSharedBuffer<InstanceData> instanceBuffer, GLenum mode = GL_TRIANGLES)
         {
+            render::VertexShaderGeneral::uniformBufferData().activeAttribBitfield = VAO.activeAttribBitfield();
+
             VAO.BindVertexBuffer(MeshVAO::INSTANCE_MODEL_BIND, instanceBuffer, 0, sizeof(glm::mat4)*2);
             VAO.BindVertexBuffer(MeshVAO::INSTANCE_INVERSE_MODEL_BIND, instanceBuffer, sizeof(glm::mat4), sizeof(glm::mat4));
-            
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, material);
             glBindVertexArray(VAO);
             if(elements)
                 glDrawElementsInstanced(mode, elements.count(), GL_UNSIGNED_INT, nullptr, instanceBuffer.count());

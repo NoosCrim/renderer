@@ -20,6 +20,39 @@ namespace render
         {
             Shader::operator=(Shader::FromFile(GL_VERTEX_SHADER, "./renderer/shader/processed/general.vert.glsl"));
         }
+    private:
+        static bool _uniformBufferInitialized;
+        static TypedSharedBuffer<VertexShaderGeneral::UniformData> _uniformBuffer;
+        inline static void _InitializeBufferData()
+        {
+            _uniformBufferInitialized = true;
+            _uniformBuffer = TypedSharedBuffer<VertexShaderGeneral::UniformData>{1};
+            Camera cam;
+            _uniformBuffer[0].view = cam.view();
+            _uniformBuffer[0].inverse_view = cam.inverse_view();
+            _uniformBuffer[0].projection = cam.projection();
+        }
+    public:
+        inline static UniformData &uniformBufferData()
+        {
+            if(!_uniformBufferInitialized) 
+            {
+                _InitializeBufferData();
+            }
+            return _uniformBuffer[0];
+        }
+
+        inline static 
+        TypedSharedBuffer<UniformData>&& swapUniformBuffer(TypedSharedBuffer<VertexShaderGeneral::UniformData> buff)
+        {
+            _uniformBufferInitialized = true;
+
+            static auto temp = std::move(_uniformBuffer);
+            _uniformBuffer = buff;
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, _uniformBuffer);
+
+            return std::move(temp);
+        }
     };
     struct FragmentShaderBRDF : Shader
     {
@@ -42,25 +75,12 @@ namespace render
     };
     struct ShaderProgramBRDF : ShaderProgram
     {
-    private:
-        TypedSharedBuffer<VertexShaderGeneral::UniformData> _vertexUniformBuffer;
-    public:
-        TypedSharedBuffer<VertexShaderGeneral::UniformData> vertexUniformBuffer()
-        {
-            return _vertexUniformBuffer;
-        }
-        void vertexUniformBuffer(TypedSharedBuffer<VertexShaderGeneral::UniformData> vertexUniformBuff)
-        {
-            _vertexUniformBuffer = vertexUniformBuff;
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, _vertexUniformBuffer);
-        }
-        ShaderProgramBRDF(TypedSharedBuffer<VertexShaderGeneral::UniformData> vertexUniformBuff) : 
+        ShaderProgramBRDF() : 
             ShaderProgram({
                 VertexShaderGeneral(),
-                FragmentShaderBRDF()}),
-            _vertexUniformBuffer(vertexUniformBuff)
+                FragmentShaderBRDF()})
         {
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, _vertexUniformBuffer);
+
         }
     };
 }

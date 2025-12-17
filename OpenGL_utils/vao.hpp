@@ -6,7 +6,7 @@ namespace render
     private:
         GLuint _name;
     protected:
-        GLuint activeAttribBitfield = 0u;
+        GLuint _activeAttribBitfield = 0u;
     public:
         VAO()
         {
@@ -18,10 +18,10 @@ namespace render
         }
         VAO(const VAO&) = delete;
         VAO& operator=(const VAO&) = delete;
-        VAO(VAO&& other) noexcept : _name(other._name), activeAttribBitfield(other.activeAttribBitfield)
+        VAO(VAO&& other) noexcept : _name(other._name), _activeAttribBitfield(other._activeAttribBitfield)
         {
             other._name = 0;
-            other.activeAttribBitfield = 0u;
+            other._activeAttribBitfield = 0u;
         }
         VAO& operator=(VAO&& other) noexcept
         {
@@ -29,9 +29,9 @@ namespace render
             {
                 if(_name) glDeleteVertexArrays(1, &_name);
                 _name = other._name;
-                activeAttribBitfield = other.activeAttribBitfield;
+                _activeAttribBitfield = other._activeAttribBitfield;
                 other._name = 0;
-                other.activeAttribBitfield = 0u;
+                other._activeAttribBitfield = 0u;
             }
             return *this;
         }
@@ -47,18 +47,22 @@ namespace render
         {
             return _name;
         }
+        GLuint activeAttribBitfield()
+        {
+            return _activeAttribBitfield;
+        }
         inline bool IsAttribActive(GLuint attribIndex) const
         {
-            return (activeAttribBitfield & (1u << attribIndex)) != 0u;
+            return (_activeAttribBitfield & (1u << attribIndex)) != 0u;
         }
         inline void EnableAttrib(GLuint attribIndex)
         {
-            activeAttribBitfield |= (1u << attribIndex);
+            _activeAttribBitfield |= (1u << attribIndex);
             glEnableVertexArrayAttrib(_name, attribIndex);
         }
         inline void DisableAttrib(GLuint attribIndex)
         {
-            activeAttribBitfield &= ~(1u << attribIndex);
+            _activeAttribBitfield &= ~(1u << attribIndex);
             glDisableVertexArrayAttrib(_name, attribIndex);
         }
         inline void BindVertexBuffer(GLuint bindingIndex, GLuint bufferName, GLintptr offset, GLsizei stride)

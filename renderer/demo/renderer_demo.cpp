@@ -64,21 +64,23 @@ int main()
     glClearColor(0.5f, 0.5f, 0.5f, 1.f);
 
     // renderer setup
-    render::ShaderProgramBRDF shaderBRDF{render::TypedSharedBuffer<render::VertexShaderGeneral::UniformData>(1)};
+    render::ShaderProgramBRDF shaderBRDF;
     
     // renderer use
     render::Camera camera;
     camera.perspective(60, 16.f/9.f);
-    shaderBRDF.vertexUniformBuffer()[0].inverse_view = camera.inverse_view();
-    shaderBRDF.vertexUniformBuffer()[0].view = camera.view();
-    shaderBRDF.vertexUniformBuffer()[0].projection = camera.projection();
+    render::VertexShaderGeneral::uniformBufferData().inverse_view = camera.inverse_view();
+    render::VertexShaderGeneral::uniformBufferData().view = camera.view();
+    render::VertexShaderGeneral::uniformBufferData().projection = camera.projection();
 
     render::TypedSharedBuffer<render::InstanceData> instanceBuffer{1};
     render::Transform icosahedronTransform{instanceBuffer, 0};
     render::Mesh icosahedronMesh(icosahedronData.vertCount, icosahedronData.verts);
     icosahedronMesh.initElements(icosahedronData.elemCount, icosahedronData.indices);
+    icosahedronMesh.initNormals(icosahedronData.verts);
 
     render::TypedSharedBuffer<render::FragmentShaderBRDF::UniformData> materialBuffer{1};
+    icosahedronMesh.material = materialBuffer;
     materialBuffer[0].ambientLight = glm::vec3{0.1f, 0.1f, 0.1f};
     materialBuffer[0].lightColor = glm::vec3{1.f, 1.f, 1.f};
     materialBuffer[0].view_lightDirection = glm::normalize(glm::vec3{1.f, 1.f, 1.f});
