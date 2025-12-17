@@ -1,6 +1,7 @@
 #pragma once
 #include "OpenGL_utils/shader.hpp"
 #include "OpenGL_utils/buffer.hpp"
+#include "camera.hpp"
 #include <glm/glm.hpp>
 
 namespace render
@@ -27,6 +28,8 @@ namespace render
         {
             _uniformBufferInitialized = true;
             _uniformBuffer = TypedSharedBuffer<VertexShaderGeneral::UniformData>{1};
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, _uniformBuffer);
+            
             Camera cam;
             _uniformBuffer[0].view = cam.view();
             _uniformBuffer[0].inverse_view = cam.inverse_view();
@@ -36,9 +39,8 @@ namespace render
         inline static UniformData &uniformBufferData()
         {
             if(!_uniformBufferInitialized) 
-            {
                 _InitializeBufferData();
-            }
+            
             return _uniformBuffer[0];
         }
 

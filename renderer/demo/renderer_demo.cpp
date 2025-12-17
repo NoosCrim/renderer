@@ -63,12 +63,13 @@ int main()
 
     glClearColor(0.5f, 0.5f, 0.5f, 1.f);
 
-    // renderer setup
+    // renderer
     render::ShaderProgramBRDF shaderBRDF;
     
-    // renderer use
     render::Camera camera;
+
     camera.perspective(60, 16.f/9.f);
+    
     render::VertexShaderGeneral::uniformBufferData().inverse_view = camera.inverse_view();
     render::VertexShaderGeneral::uniformBufferData().view = camera.view();
     render::VertexShaderGeneral::uniformBufferData().projection = camera.projection();
