@@ -44,7 +44,7 @@ namespace render
             inverse();
         }
         Transform(SharedBuffer buffer, size_t matricesOffset) // takes 2*sizeof(mat4) of buffer for _matrix and _inverse
-            : _position(0.f), _orientation(1.f, 0.f, 0.f, 0.f), _scale(1.f) 
+            : _buffer(buffer), _position(0.f), _orientation(1.f, 0.f, 0.f, 0.f), _scale(1.f)
         {
             _matrix = (glm::mat4*)((char*)buffer.data() + matricesOffset);
             _inverse = _matrix + 1;
