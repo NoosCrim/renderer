@@ -1,11 +1,11 @@
 #include "buffer.hpp"
 namespace render
 {
-    ConstSharedBuffer::__Buffer::__Buffer(GLsizeiptr size, void* initialData) :
+    ConstSharedBuffer::__Buffer::__Buffer(GLsizeiptr size, const void* initialData) :
         _size(size)
     {
         constexpr GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT;
-        glGenBuffers(1, &_name);
+        glCreateBuffers(1, &_name);
         if(!_name)
         {
             std::fputs("Failed to generate OpenGL buffer!\n", stderr);
@@ -79,7 +79,7 @@ namespace render
         }
         return *this;
     }
-    ConstSharedBuffer::ConstSharedBuffer(GLsizeiptr size, void* initialData)
+    ConstSharedBuffer::ConstSharedBuffer(GLsizeiptr size, const void* initialData)
     {
         buffer = new __Buffer(size, initialData);
         buffer->Aquire();

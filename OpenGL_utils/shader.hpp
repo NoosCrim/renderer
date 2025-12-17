@@ -4,7 +4,7 @@
 #include <GL/glew.h>
 #include <string>
 
-namespace renderer
+namespace render
 {
 	bool ReadTxtFile(const char* const path, std::string &out)
     {
@@ -97,14 +97,14 @@ namespace renderer
 		}
 	};
 }
-renderer::Shader::Shader(const Shader& other_) :
+render::Shader::Shader(const Shader& other_) :
 	_name(other_._name),
 	_type(other_._type)
 {
 	if(instanceCount)
 		++*instanceCount;
 }
-renderer::Shader::Shader(GLenum type_, const char* const code_):
+render::Shader::Shader(GLenum type_, const char* const code_):
 	_type(type_)
 {
 	GLint compileStatus, logLen;
@@ -122,7 +122,7 @@ renderer::Shader::Shader(GLenum type_, const char* const code_):
 		return;
 	}
 }
-renderer::Shader& renderer::Shader::operator=(const Shader& other_)
+render::Shader& render::Shader::operator=(const Shader& other_)
 {
 	if(instanceCount)
 	{
@@ -142,7 +142,7 @@ renderer::Shader& renderer::Shader::operator=(const Shader& other_)
 	
 	return *this;
 }
-renderer::Shader::~Shader()
+render::Shader::~Shader()
 {
 	if (!instanceCount)
 		return;
@@ -154,7 +154,7 @@ renderer::Shader::~Shader()
 	
 }
 
-renderer::Shader renderer::Shader::FromFile(GLenum type_, const char* const path_)
+render::Shader render::Shader::FromFile(GLenum type_, const char* const path_)
 {
 	std::string code;
 	if(!ReadTxtFile(path_, code))
@@ -165,7 +165,7 @@ renderer::Shader renderer::Shader::FromFile(GLenum type_, const char* const path
 	return Shader(type_, code.c_str());
 }
 
-renderer::ShaderProgram::ShaderProgram(std::initializer_list<Shader> shaders_)
+render::ShaderProgram::ShaderProgram(std::initializer_list<Shader> shaders_)
 {
 	_name = glCreateProgram();
 	for(const Shader &shader : shaders_)
@@ -192,14 +192,14 @@ renderer::ShaderProgram::ShaderProgram(std::initializer_list<Shader> shaders_)
 	}
 }
 
-renderer::ShaderProgram::ShaderProgram(const ShaderProgram& other_) : 
+render::ShaderProgram::ShaderProgram(const ShaderProgram& other_) : 
 	_name(other_._name)
 {
 	if(instanceCount)
 		++*instanceCount;
 }
 
-renderer::ShaderProgram& renderer::ShaderProgram::operator=(const ShaderProgram& other_)
+render::ShaderProgram& render::ShaderProgram::operator=(const ShaderProgram& other_)
 {
 	if(instanceCount)
 	{
@@ -218,7 +218,7 @@ renderer::ShaderProgram& renderer::ShaderProgram::operator=(const ShaderProgram&
 	
 	return *this;
 }
-renderer::ShaderProgram::~ShaderProgram()
+render::ShaderProgram::~ShaderProgram()
 {
 	if (!instanceCount)
 		return;
@@ -230,7 +230,7 @@ renderer::ShaderProgram::~ShaderProgram()
 	
 }
 
-void renderer::ShaderProgram::Use() const
+void render::ShaderProgram::Use() const
 {
 	glUseProgram(_name);
 }

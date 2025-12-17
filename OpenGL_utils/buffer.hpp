@@ -5,6 +5,12 @@
 #include <cstdio>
 namespace render
 {
+    template<typename T1, typename T2>
+    constexpr void EqualSizeCheck()
+    {
+        static_assert(sizeof(T1) == sizeof(T2));
+    }
+
     class SharedBuffer;
     class ConstSharedBuffer
     {
@@ -20,7 +26,7 @@ namespace render
             __Buffer(const __Buffer&) = delete;
             __Buffer& operator=(const __Buffer&) = delete;
 
-            __Buffer(GLsizeiptr size, void* initialData = nullptr);
+            __Buffer(GLsizeiptr size, const void* initialData = nullptr);
             __Buffer(__Buffer&& other) noexcept;
             __Buffer& operator=(__Buffer&& other) noexcept;
             ~__Buffer();
@@ -63,7 +69,7 @@ namespace render
         ConstSharedBuffer() = default;
         ConstSharedBuffer(const ConstSharedBuffer &other);
         ConstSharedBuffer& operator=(const ConstSharedBuffer &other);
-        ConstSharedBuffer(GLsizeiptr size, void* initialData = nullptr);
+        ConstSharedBuffer(GLsizeiptr size, const void* initialData = nullptr);
         ConstSharedBuffer(ConstSharedBuffer&& other) noexcept;
         ConstSharedBuffer& operator=(ConstSharedBuffer&& other) noexcept;
         inline GLuint size() const
@@ -95,18 +101,31 @@ namespace render
     template<typename T>
     class TypedConstSharedBuffer : public ConstSharedBuffer
     {
-        TypedConstSharedBuffer() = default;
-        TypedConstSharedBuffer(const TypedConstSharedBuffer &other) : ConstSharedBuffer(other) {}
+    public:
+        TypedConstSharedBuffer()
+        {
+            EqualSizeCheck<TypedConstSharedBuffer, ConstSharedBuffer>();
+        }
+        TypedConstSharedBuffer(const TypedConstSharedBuffer &other) : ConstSharedBuffer(other)
+        {
+            EqualSizeCheck<TypedConstSharedBuffer, ConstSharedBuffer>();
+        }
         TypedConstSharedBuffer& operator=(const TypedConstSharedBuffer &other)
         {
             ConstSharedBuffer::operator=(other);
             return *this;
         }
-        TypedConstSharedBuffer(GLsizeiptr count, T* initialData = nullptr) : ConstSharedBuffer(count * sizeof(T), initialData) {}
-        TypedConstSharedBuffer(ConstSharedBuffer&& other) noexcept : ConstSharedBuffer(other) {}
+        TypedConstSharedBuffer(GLsizeiptr count, const T* initialData = nullptr) : ConstSharedBuffer(count * sizeof(T), initialData)
+        {
+            EqualSizeCheck<TypedConstSharedBuffer, ConstSharedBuffer>();
+        }
+        TypedConstSharedBuffer(ConstSharedBuffer&& other) noexcept : ConstSharedBuffer(other)
+        {
+            EqualSizeCheck<TypedConstSharedBuffer, ConstSharedBuffer>();
+        }
         TypedConstSharedBuffer& operator=(TypedConstSharedBuffer&& other) noexcept
         {
-            ConstSharedBuffer::operator=(&&other);
+            ConstSharedBuffer::operator=(std::move(other));
             return *this;
         }
 
@@ -117,6 +136,10 @@ namespace render
         inline const T* data() const
         {
             return buffer ? buffer->data() : nullptr;
+        }
+        inline const T& operator[](size_t i) const
+        {
+            return data()[i];
         }
     };
 
@@ -130,7 +153,7 @@ namespace render
             ConstSharedBuffer::operator=(other);
             return *this;
         }
-        SharedBuffer(GLsizeiptr size, void* initialData = nullptr) : ConstSharedBuffer(size, initialData) {}
+        SharedBuffer(GLsizeiptr size, const void* initialData = nullptr) : ConstSharedBuffer(size, initialData) {}
         SharedBuffer(SharedBuffer&& other) noexcept : ConstSharedBuffer(std::move(other)) {}
         SharedBuffer& operator=(SharedBuffer&& other) noexcept
         {
@@ -142,23 +165,40 @@ namespace render
             return buffer ? buffer->data() : nullptr;
         }
     };
+    static_assert(sizeof(SharedBuffer) == sizeof(ConstSharedBuffer));
 
     template<typename T>
     class TypedSharedBuffer : public SharedBuffer
     {
     public:
-        TypedSharedBuffer() = default;
-        TypedSharedBuffer(TypedSharedBuffer &other) : SharedBuffer(other) {}
+        TypedSharedBuffer()
+        {
+            EqualSizeCheck<TypedSharedBuffer, ConstSharedBuffer>();
+        }
+        TypedSharedBuffer(TypedSharedBuffer &other) : SharedBuffer(other)
+        {
+            EqualSizeCheck<TypedSharedBuffer, ConstSharedBuffer>();
+        }
         TypedSharedBuffer& operator=(TypedSharedBuffer &other)
         {
             ConstSharedBuffer::operator=(other);
             return *this;
         }
-        TypedSharedBuffer(GLsizeiptr count, T* initialData = nullptr) : SharedBuffer(count * sizeof(T), initialData) {}
-        TypedSharedBuffer(TypedSharedBuffer&& other) noexcept : SharedBuffer(other) {}
+        inline operator TypedConstSharedBuffer<T>() const
+        {
+            return *(TypedConstSharedBuffer<T>*)this;
+        }
+        TypedSharedBuffer(GLsizeiptr count, const T* initialData = nullptr) : SharedBuffer(count * sizeof(T), initialData) 
+        {
+            EqualSizeCheck<TypedSharedBuffer, ConstSharedBuffer>();
+        }
+        TypedSharedBuffer(TypedSharedBuffer&& other) noexcept : SharedBuffer(other) 
+        {
+            EqualSizeCheck<TypedSharedBuffer, ConstSharedBuffer>();
+        }
         TypedSharedBuffer& operator=(TypedSharedBuffer&& other) noexcept
         {
-            SharedBuffer::operator=(&&other);
+            SharedBuffer::operator=(std::move(other));
             return *this;
         }
 
@@ -168,7 +208,11 @@ namespace render
         }
         inline T* data()
         {
-            return buffer ? buffer->data() : nullptr;
+            return buffer ? (T*)buffer->data() : nullptr;
+        }
+        inline T& operator[](size_t i)
+        {
+            return data()[i];
         }
     };
 }

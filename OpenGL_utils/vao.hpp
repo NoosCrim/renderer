@@ -10,7 +10,7 @@ namespace render
     public:
         VAO()
         {
-            glGenVertexArrays(1, &_name);
+            glCreateVertexArrays(1, &_name);
         }
         ~VAO()
         {
@@ -71,7 +71,7 @@ namespace render
         }
         inline void Draw(GLuint first, GLuint count, GLenum mode = GL_TRIANGLES)
         {
-            glDrawArrays(GL_TRIANGLES, first, count);
+            glDrawArrays(mode, first, count);
         }
         inline void DrawInstanced(GLuint first, GLuint count, GLuint instanceCount, GLenum mode = GL_TRIANGLES)
         {

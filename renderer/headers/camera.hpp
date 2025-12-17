@@ -29,10 +29,8 @@ namespace render
         };
     private:
         glm::mat4 _projection;
-        glm::mat4 _pv; // projection * view
-        uint16_t _lastTransformVersion = -1u;
+        uint16_t _lastTransformVersion = (uint16_t)-1;
         bool _projectionDirty = true;
-        bool _pvDirty = true;
         enum CameraType : uint8_t
         {
             Perspective,
@@ -42,6 +40,10 @@ namespace render
     public:
         Camera() : fov(60.f), aspectRatio(16.f/9.f) // default perspective parameters
         {}
+        Camera(const Camera&) = delete;
+        Camera(Camera&&) = delete;
+        Camera& operator=(const Camera&) = delete;
+        Camera& operator=(Camera&&) = delete;
 
         void perspective(float fovDegrees, float aspect)
         {
@@ -86,7 +88,6 @@ namespace render
             _projection = proj;
             cameraType = Custom;
             _projectionDirty = false;
-            _pvDirty = true;
         }
 
         void setFarNear(float nearP, float farP)
@@ -118,7 +119,6 @@ namespace render
                 // else Custom: do nothing, user sets projection manually
 
                 _projectionDirty = false;
-                _pvDirty = true;
             }
             return _projection;
         }
@@ -127,17 +127,10 @@ namespace render
         {
             return transform.inverse();
         }
-
-        const glm::mat4& pv()
+        
+        const glm::mat4& inverse_view()
         {
-            _pvDirty = _pvDirty || (_lastTransformVersion != transform.version()); // move version mismatch to pv dirty check
-            _lastTransformVersion = transform.version();
-            if (_pvDirty)
-            {
-                _pv = projection() * view();
-                _pvDirty = false;
-            }
-            return _pv;
+            return transform.matrix();
         }
     };
 }
