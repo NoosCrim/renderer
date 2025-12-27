@@ -123,6 +123,10 @@ namespace render
             };
             render::TypedSharedBuffer<MaterialUniformData> materialBuffer{1};
         public:
+            Material()
+            {
+                materialBuffer[0] = MaterialUniformData{};
+            }
             MaterialUniformData &uniformData = materialBuffer[0];
             Texture textures[NEXT_MAP_UNIT];
             void Use() const

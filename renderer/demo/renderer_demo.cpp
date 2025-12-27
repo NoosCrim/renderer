@@ -100,15 +100,24 @@ int main()
 
     // texture setup
     render::Image bricksAlbedoImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_Color.png", 3);
-    render::Image bricksNormalImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_NormalGL.png", 3);
     render::Texture2D bricksAlbedo(bricksAlbedoImg, 1, GL_RGB8);
+    
+    render::Image bricksNormalImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_NormalGL.png", 3);
     render::Texture2D bricksNormal(bricksNormalImg, 1, GL_RGB8);
+
+    render::Image bricksRoughnessImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_Roughness.png", 1);
+    render::Texture2D bricksRoughness(bricksRoughnessImg, 1, GL_R8);
+
+    render::Image bricksAOImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_AmbientOcclusion.png", 1);
+    render::Texture2D bricksAO(bricksAOImg, 1, GL_R8);
 
     // material setup
     render::FragmentShaderBRDF::Material material;
-
+    material.uniformData.metallic_mod = 0.1f;
     material.textures[render::FragmentShaderBRDF::ALBEDO_MAP_UNIT] = bricksAlbedo;
     material.textures[render::FragmentShaderBRDF::NORMAL_MAP_UNIT] = bricksNormal;
+    material.textures[render::FragmentShaderBRDF::ROUGHNESS_MAP_UNIT] = bricksRoughness;
+    material.textures[render::FragmentShaderBRDF::AMBIENT_OCCLUSION_MAP_UNIT] = bricksAO;
 
     // shader creation
     render::ShaderProgramBRDF shaderBRDF;

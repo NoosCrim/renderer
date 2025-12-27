@@ -87,7 +87,7 @@ void main()
     {
         vec3 normal_map_sample = texture(normal_map, frag_uv).xyz;
         normal_map_sample = normal_map_sample * 2.f - 1.f;
-        final_normal = normalize(TBN * normal_map_sample);
+        final_normal = normalize(normalize(TBN * normal_map_sample) * normal_mod + view_normal * clamp(1.f - normal_mod, 0.f, 1.f));
     }
     else
         final_normal = view_normal;
@@ -97,14 +97,29 @@ void main()
         if(ALBEDO_MAP_ENABLED)
             color *= texture(albedo_map, frag_uv);
     }
-    
-    // temporary phong lighting
-    float dF = clamp(dot(final_normal, view_lightDirection), 0.f, 1.f);
-    vec3 dL = dF * lightColor;
-    vec3 halfVector = normalize(-normalize(vec3(frag_view_pos)) + view_lightDirection);
-    float sF = pow(clamp(dot(final_normal, halfVector), 0.f, 1.f), 16.f);
-    vec3 sL = sF * lightColor;
-    vec3 aL = ambientLight;
-    out_color = vec4(sL + (dL + aL) * vec3(color), color.a);
+    color *= color_mod;
+    float roughness = roughness_mod;
+    float metallic = metallic_mod;
+    float ambient_occlusion = ambient_occlusion_mod;
+    if(ROUGHNESS_MAP_ENABLED)
+    {
+        roughness *= texture(roughness_map, frag_uv).r;
+    }
+    if(METALLIC_MAP_ENABLED)
+    {
+        metallic *= texture(metallic_map, frag_uv).r;
+    }
+    if(AMBIENT_OCCLUSION_MAP_ENABLED)
+    {
+        ambient_occlusion *= texture(ambient_occlusion_map, frag_uv).r;
+    }
 
+    // temporary phong-like lighting
+    float dF = clamp(dot(final_normal, view_lightDirection), 0.f, 1.f);
+    vec3 dL = dF * lightColor * roughness;
+    vec3 halfVector = normalize(-normalize(vec3(frag_view_pos)) + view_lightDirection);
+    float sF = pow(clamp(dot(final_normal, halfVector), 0.f, 1.f), 256.f * metallic);
+    vec3 sL = sF * lightColor * (1.0f - roughness);
+    vec3 aL = ambientLight * ambient_occlusion;
+    out_color = vec4(sL + (dL + aL) * vec3(color), color.a);
 }
