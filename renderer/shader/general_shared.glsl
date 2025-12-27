@@ -3,11 +3,10 @@ layout(std140, binding = 0) uniform _generalUniforms
     mat4 inverse_view;
     mat4 view;
     mat4 projection;
-    uint activeAttribBitfield;
     // vec2 resolution;
     // vec2 time_deltaTime;
 };
-
+layout(location = 0) uniform uint activeAttribBitfield;
 
 bool isAttribEnabled(uint idx)
 {

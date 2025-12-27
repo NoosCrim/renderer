@@ -60,7 +60,7 @@ namespace render
         if(other.buffer)
         {
             buffer = other.buffer;
-            buffer->Aquire();
+            buffer->Acquire();
         }
     }
     ConstSharedBuffer& ConstSharedBuffer::operator=(const ConstSharedBuffer &other)
@@ -74,7 +74,7 @@ namespace render
             buffer = other.buffer;
             if(buffer)
             {
-                buffer->Aquire();
+                buffer->Acquire();
             }
         }
         return *this;
@@ -82,7 +82,7 @@ namespace render
     ConstSharedBuffer::ConstSharedBuffer(GLsizeiptr size, const void* initialData)
     {
         buffer = new __Buffer(size, initialData);
-        buffer->Aquire();
+        buffer->Acquire();
     }
     ConstSharedBuffer::ConstSharedBuffer(ConstSharedBuffer&& other) noexcept
     {

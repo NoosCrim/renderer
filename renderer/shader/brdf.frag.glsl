@@ -2,24 +2,33 @@
 
 #include "general_shared.glsl"
 
-layout(std140, binding = 1) uniform _brdfUniforms
+layout(std140, binding = 1) uniform _lightUniforms
 {
     vec3 ambientLight;
-    uint activeTextureBitfield;
+    uint _pad1;
     vec3 lightColor;
-    float _pad1;
+    float _pad2;
     vec3 view_lightDirection;
 };
+layout(std140, binding = 2) uniform _materialUniforms
+{
+    vec4 color_mod;
+    float roughness_mod;
+    float metallic_mod;
+    float ambient_occlusion_mod;
+    float normal_mod;
+    uint active_texture_bitfield;
+};
 
-layout(binding = 2) uniform sampler2D albedo_map;
-layout(binding = 3) uniform sampler2D Roughness_map;
-layout(binding = 4) uniform sampler2D metallic_map;
-layout(binding = 5) uniform sampler2D normal_map;
-layout(binding = 6) uniform sampler2D ambient_occlusion_map;
+layout(binding = 0) uniform sampler2D albedo_map;
+layout(binding = 1) uniform sampler2D roughness_map;
+layout(binding = 2) uniform sampler2D metallic_map;
+layout(binding = 3) uniform sampler2D normal_map;
+layout(binding = 4) uniform sampler2D ambient_occlusion_map;
 
 bool isMapEnabled(uint map)
 {
-    return ((activeTextureBitfield >> map) & 1u) == 1u;
+    return ((active_texture_bitfield >> map) & 1u) == 1u;
 }
 
 const uint ALBEDO_MAP = 0;
@@ -49,7 +58,7 @@ out vec4 out_color;
 void main()
 {
     vec4 color = frag_color;
-    vec3 view_normal, view_tangent, view_bitangent;
+    vec3 view_normal, view_tangent, view_bitangent, final_normal;
 
     vec3 view_pos_dx = dFdx(vec3(frag_view_pos));
     vec3 view_pos_dy = dFdy(vec3(frag_view_pos));
@@ -74,8 +83,28 @@ void main()
         view_bitangent = cross(view_normal, view_tangent);
     }
     mat3 TBN = mat3(view_tangent, view_bitangent, view_normal);
+    if(NORMAL_MAP_ENABLED)
+    {
+        vec3 normal_map_sample = texture(normal_map, frag_uv).xyz;
+        normal_map_sample = normal_map_sample * 2.f - 1.f;
+        final_normal = normalize(TBN * normal_map_sample);
+    }
+    else
+        final_normal = view_normal;
 
-    vec3 dL = clamp(dot(view_normal, view_lightDirection), 0.f, 1.f) * lightColor;
+    if(UV_ENABLED)
+    {
+        if(ALBEDO_MAP_ENABLED)
+            color *= texture(albedo_map, frag_uv);
+    }
+    
+    // temporary phong lighting
+    float dF = clamp(dot(final_normal, view_lightDirection), 0.f, 1.f);
+    vec3 dL = dF * lightColor;
+    vec3 halfVector = normalize(-normalize(vec3(frag_view_pos)) + view_lightDirection);
+    float sF = pow(clamp(dot(final_normal, halfVector), 0.f, 1.f), 16.f);
+    vec3 sL = sF * lightColor;
     vec3 aL = ambientLight;
-    out_color = vec4((dL + aL) * vec3(color), color.a); // simple lambertian for now
+    out_color = vec4(sL + (dL + aL) * vec3(color), color.a);
+
 }

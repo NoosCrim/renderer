@@ -30,7 +30,7 @@ namespace render
             __Buffer(__Buffer&& other) noexcept;
             __Buffer& operator=(__Buffer&& other) noexcept;
             ~__Buffer();
-            inline void Aquire() const
+            inline void Acquire() const
             {
                 ++_refCount;
             }

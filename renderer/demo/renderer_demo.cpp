@@ -59,49 +59,76 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
     
 
     glClearColor(0.5f, 0.5f, 0.5f, 1.f);
 
+    stbi_set_flip_vertically_on_load(1);
     // renderer
-    render::ShaderProgramBRDF shaderBRDF;
     
+    // camera setup
     render::Camera camera;
-
     camera.perspective(60, 16.f/9.f);
+    camera.transform.position({0.f, 2.5f, 0.f});
+    camera.transform.orientation(glm::quat(glm::vec3(glm::radians(-45.f), 0.f, 0.f)));
     
     render::VertexShaderGeneral::uniformBufferData().inverse_view = camera.inverse_view();
     render::VertexShaderGeneral::uniformBufferData().view = camera.view();
     render::VertexShaderGeneral::uniformBufferData().projection = camera.projection();
 
-    render::TypedSharedBuffer<render::InstanceData> instanceBuffer{1};
-    render::Transform icosahedronTransform{instanceBuffer, 0};
-    render::Mesh icosahedronMesh(icosahedronData.vertCount, icosahedronData.verts);
-    icosahedronMesh.initElements(icosahedronData.elemCount, icosahedronData.indices);
-    icosahedronMesh.initNormals(icosahedronData.verts);
+    // mesh setup
+    render::TypedSharedBuffer<render::InstanceData> cubeInstanceBuffer{1};
+    render::Transform cubeTransform{cubeInstanceBuffer, 0};
+    render::Mesh cubeMesh(cubeData::vertCount, cubeData::verts);
+    cubeMesh.initElements(cubeData::elemCount, cubeData::indices);
+    cubeMesh.initNormals(cubeData::verts);
+    cubeMesh.initUVs(cubeData::UVs);
 
-    render::TypedSharedBuffer<render::FragmentShaderBRDF::UniformData> materialBuffer{1};
-    icosahedronMesh.material = materialBuffer;
-    materialBuffer[0].ambientLight = glm::vec3{0.1f, 0.1f, 0.1f};
-    materialBuffer[0].lightColor = glm::vec3{1.f, 1.f, 1.f};
-    materialBuffer[0].view_lightDirection = glm::normalize(glm::vec3{1.f, 1.f, 1.f});
+    cubeTransform.position({0, 0, -2.5f});
+    cubeTransform.inverse();
+    cubeTransform.matrix();
 
-    icosahedronTransform.position({0, 0, -10});
-    icosahedronTransform.orientation(glm::quat({glm::radians(60.f), 0.f, 0.f}));
-    icosahedronTransform.inverse();
-    icosahedronTransform.matrix();
+    // lighting setup
+    render::FragmentShaderBRDF::Lighting lighting;
+    lighting.uniformData.ambientLight = glm::vec3{0.1f, 0.1f, 0.1f};
+    lighting.uniformData.lightColor = glm::vec3{1.f, 1.f, 1.f};
+    lighting.uniformData.view_lightDirection = glm::normalize(glm::vec3{1.f, 1.f, 1.f});
+
+    // texture setup
+    render::Image bricksAlbedoImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_Color.png", 3);
+    render::Image bricksNormalImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_NormalGL.png", 3);
+    render::Texture2D bricksAlbedo(bricksAlbedoImg, 1, GL_RGB8);
+    render::Texture2D bricksNormal(bricksNormalImg, 1, GL_RGB8);
+
+    // material setup
+    render::FragmentShaderBRDF::Material material;
+
+    material.textures[render::FragmentShaderBRDF::ALBEDO_MAP_UNIT] = bricksAlbedo;
+    material.textures[render::FragmentShaderBRDF::NORMAL_MAP_UNIT] = bricksNormal;
+
+    // shader creation
+    render::ShaderProgramBRDF shaderBRDF;
+
+    // setting lighting to use 
+    lighting.Use();
+
+    // setting shader to use
+    shaderBRDF.Use();
 
     while(!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shaderBRDF.Use();
-        render::FragmentShaderBRDF::BindUniformBuffer(materialBuffer);
-        icosahedronMesh.Draw(instanceBuffer);
-        icosahedronTransform.orientation(glm::quat({0.f, glm::radians(0.2f), 0.f}) * icosahedronTransform.orientation());
-        icosahedronTransform.inverse();
-        icosahedronTransform.matrix();
+        material.Use();
+        cubeMesh.Draw(cubeInstanceBuffer);
+        cubeTransform.orientation(glm::quat({0.f, glm::radians(0.2f), 0.f}) * cubeTransform.orientation());
+        cubeTransform.inverse();
+        cubeTransform.matrix();
 
         glfwSwapBuffers(window);
     }

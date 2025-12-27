@@ -96,7 +96,6 @@ namespace render
         MeshVAO VAO;
     public:
         GLuint activeVertices = 0;
-        TypedSharedBuffer<FragmentShaderBRDF::UniformData> material;
         TypedSharedBuffer<glm::vec3> vertices;
         TypedSharedBuffer<glm::vec4> colors;
         TypedSharedBuffer<glm::vec3> normals;
@@ -124,7 +123,7 @@ namespace render
         {
             normals = TypedSharedBuffer<glm::vec3>(vertices.count(), initialData);
             VAO.EnableAttrib(MeshVAO::NORMAL_IDX);
-            VAO.BindVertexBuffer(MeshVAO::NORMAL_BIND, vertices, 0, sizeof(glm::vec3));
+            VAO.BindVertexBuffer(MeshVAO::NORMAL_BIND, normals, 0, sizeof(glm::vec3));
         }
         void deinitNormals()
         {
@@ -135,7 +134,7 @@ namespace render
         {
             tangents = TypedSharedBuffer<glm::vec3>(vertices.count(), initialData);
             VAO.EnableAttrib(MeshVAO::TANGENT_IDX);
-            VAO.BindVertexBuffer(MeshVAO::TANGENT_BIND, vertices, 0, sizeof(glm::vec3));
+            VAO.BindVertexBuffer(MeshVAO::TANGENT_BIND, tangents, 0, sizeof(glm::vec3));
         }
         void deinitTangents()
         {
@@ -146,7 +145,7 @@ namespace render
         {
             UVs = TypedSharedBuffer<glm::vec2>(vertices.count(), initialData);
             VAO.EnableAttrib(MeshVAO::UV_IDX);
-            VAO.BindVertexBuffer(MeshVAO::UV_BIND, vertices, 0, sizeof(glm::vec2));
+            VAO.BindVertexBuffer(MeshVAO::UV_BIND, UVs, 0, sizeof(glm::vec2));
         }
         void deinitUVs()
         {
@@ -165,11 +164,10 @@ namespace render
         }
         void Draw(TypedSharedBuffer<InstanceData> instanceBuffer, GLenum mode = GL_TRIANGLES)
         {
-            render::VertexShaderGeneral::uniformBufferData().activeAttribBitfield = VAO.activeAttribBitfield();
+            glUniform1ui(render::VertexShaderGeneral::ACTIVE_ATRRIB_BIT_LOCATION, VAO.activeAttribBitfield());
 
             VAO.BindVertexBuffer(MeshVAO::INSTANCE_MODEL_BIND, instanceBuffer, 0, sizeof(glm::mat4)*2);
             VAO.BindVertexBuffer(MeshVAO::INSTANCE_INVERSE_MODEL_BIND, instanceBuffer, sizeof(glm::mat4), sizeof(glm::mat4));
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, material);
             glBindVertexArray(VAO);
             if(elements)
                 glDrawElementsInstanced(mode, elements.count(), GL_UNSIGNED_INT, nullptr, instanceBuffer.count());
