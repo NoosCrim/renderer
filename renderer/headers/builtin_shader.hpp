@@ -2,21 +2,18 @@
 #include "OpenGL_utils/shader.hpp"
 #include "OpenGL_utils/buffer.hpp"
 #include "OpenGL_utils/texture.hpp"
-#include "camera.hpp"
 #include <glm/glm.hpp>
 
 namespace render
 {
+    enum UniformBufferBindingPoint : GLuint
+    {
+        CAMERA_BINDING_POINT = 0,
+        BRDF_LIGHTING_BINDING_POINT = 1,
+        BRDF_MATERIAL_BINDING_POINT = 2
+    };
     struct VertexShaderGeneral : Shader
     {
-        struct UniformData
-        {
-            glm::mat4 inverse_view;
-            glm::mat4 view;
-            glm::mat4 projection;
-            // glm::vec2 resolution;
-            // glm::vec2 time_deltaTime;
-        };
         enum UniformLocation
         {
             ACTIVE_ATRRIB_BIT_LOCATION = 0
@@ -24,40 +21,6 @@ namespace render
         VertexShaderGeneral() : Shader()
         {
             Shader::operator=(Shader::FromFile(GL_VERTEX_SHADER, "./renderer/shader/processed/general.vert.glsl"));
-        }
-    private:
-        static bool _uniformBufferInitialized;
-        static TypedSharedBuffer<VertexShaderGeneral::UniformData> _uniformBuffer;
-        inline static void _InitializeBufferData()
-        {
-            _uniformBufferInitialized = true;
-            _uniformBuffer = TypedSharedBuffer<VertexShaderGeneral::UniformData>{1};
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, _uniformBuffer);
-            
-            Camera cam;
-            _uniformBuffer[0].view = cam.view();
-            _uniformBuffer[0].inverse_view = cam.inverse_view();
-            _uniformBuffer[0].projection = cam.projection();
-        }
-    public:
-        inline static UniformData &uniformBufferData()
-        {
-            if(!_uniformBufferInitialized) 
-                _InitializeBufferData();
-            
-            return _uniformBuffer[0];
-        }
-
-        inline static 
-        TypedSharedBuffer<UniformData>&& swapUniformBuffer(TypedSharedBuffer<VertexShaderGeneral::UniformData> buff)
-        {
-            _uniformBufferInitialized = true;
-
-            static auto temp = std::move(_uniformBuffer);
-            _uniformBuffer = buff;
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, _uniformBuffer);
-
-            return std::move(temp);
         }
     };
     struct FragmentShaderBRDF : Shader

@@ -72,17 +72,17 @@ int main()
     
     // camera setup
     render::Camera camera;
-    camera.perspective(60, 16.f/9.f);
+    camera.perspective(60, 1280, 720);
     camera.transform.position({0.f, 2.5f, 0.f});
     camera.transform.orientation(glm::quat(glm::vec3(glm::radians(-45.f), 0.f, 0.f)));
-    
-    render::VertexShaderGeneral::uniformBufferData().inverse_view = camera.inverse_view();
-    render::VertexShaderGeneral::uniformBufferData().view = camera.view();
-    render::VertexShaderGeneral::uniformBufferData().projection = camera.projection();
+    camera.projection();
+    camera.transform.matrix();
+    camera.transform.inverse();
+    camera.Use();
 
     // mesh setup
     render::TypedSharedBuffer<render::InstanceData> cubeInstanceBuffer{1};
-    render::Transform cubeTransform{cubeInstanceBuffer, 0};
+    render::Transform cubeTransform{cubeInstanceBuffer, &cubeInstanceBuffer.data()->model, &cubeInstanceBuffer.data()->inverse_model};
     render::Mesh cubeMesh(cubeData::vertCount, cubeData::verts);
     cubeMesh.initElements(cubeData::elemCount, cubeData::indices);
     cubeMesh.initNormals(cubeData::verts);

@@ -22,7 +22,6 @@ namespace render
         glm::vec3 _position;
         glm::quat _orientation;
         glm::vec3 _scale;
-        uint16_t _version = 0u;
         mutable bool matrixDirty = true;
         mutable bool inverseDirty = true;
         void AllocMatrices()
@@ -43,11 +42,11 @@ namespace render
             matrix();
             inverse();
         }
-        Transform(SharedBuffer buffer, size_t matricesOffset) // takes 2*sizeof(mat4) of buffer for _matrix and _inverse
+        Transform(SharedBuffer buffer, void* transformBufferLocation, void* inverseBufferLocation) // takes 2*sizeof(mat4) of buffer for _matrix and _inverse
             : _buffer(buffer), _position(0.f), _orientation(1.f, 0.f, 0.f, 0.f), _scale(1.f)
         {
-            _matrix = (glm::mat4*)((char*)buffer.data() + matricesOffset);
-            _inverse = _matrix + 1;
+            _matrix = (glm::mat4*)transformBufferLocation;
+            _inverse = (glm::mat4*)inverseBufferLocation;
         }
         ~Transform()
         {
@@ -58,11 +57,6 @@ namespace render
         Transform(Transform&&) = delete;
         Transform& operator=(const Transform&) = delete;
         Transform& operator=(Transform&&) = delete;
-        
-        uint16_t version() const
-        {
-            return _version;
-        }
 
         const glm::mat4& matrix() const
         {
@@ -98,7 +92,6 @@ namespace render
             _position = pos;
             matrixDirty = true;
             inverseDirty = true;
-            ++_version;
         }
 
         const glm::quat& orientation() const
@@ -111,7 +104,6 @@ namespace render
             _orientation = orient;
             matrixDirty = true;
             inverseDirty = true;
-            ++_version;
         }
 
         const glm::vec3 rotation() const // as 
@@ -137,7 +129,6 @@ namespace render
             _scale = scl;
             matrixDirty = true;
             inverseDirty = true;
-            ++_version;
         }
     };
 }

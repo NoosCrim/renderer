@@ -3,11 +3,21 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/glew.h>
 #include "transform.hpp"
+#include "builtin_shader.hpp"
 
 namespace render
 {
     struct Camera
     {
+    private:
+        struct CameraUniformData
+        {
+            glm::mat4 inverse_view;
+            glm::mat4 view;
+            glm::mat4 projection;
+            glm::uvec2 resolution;
+        };
+        TypedSharedBuffer<CameraUniformData> _cameraBuffer{1};
     public:
         Transform transform;
         float nearPlane = 0.1f;
@@ -24,12 +34,11 @@ namespace render
             struct
             {
                 float fov;
-                float aspectRatio;
             };
         };
+        glm::uvec2 &resolution; // ref to resolution in CameraUniformData
     private:
-        glm::mat4 _projection;
-        uint16_t _lastTransformVersion = (uint16_t)-1;
+        glm::mat4 &_projection;
         bool _projectionDirty = true;
         enum CameraType : uint8_t
         {
@@ -38,26 +47,35 @@ namespace render
             Custom
         } cameraType = Perspective;
     public:
-        Camera() : fov(60.f), aspectRatio(16.f/9.f) // default perspective parameters
+        Camera() :
+            transform(_cameraBuffer, &_cameraBuffer[0].inverse_view, &_cameraBuffer[0].view),
+            fov(60.f), 
+            resolution(_cameraBuffer[0].resolution),
+            _projection(_cameraBuffer[0].projection)
         {}
         Camera(const Camera&) = delete;
         Camera(Camera&&) = delete;
         Camera& operator=(const Camera&) = delete;
         Camera& operator=(Camera&&) = delete;
-
-        void perspective(float fovDegrees, float aspect)
+        void Use() const
         {
-            if (fovDegrees == fov && aspect == aspectRatio && cameraType == Perspective)
+            glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA_BINDING_POINT, _cameraBuffer);
+        }
+        void perspective(float fovDegrees, uint32_t w, uint32_t h)
+        {
+            if (fovDegrees == fov && w == resolution.x && h == resolution.y && cameraType == Perspective)
                 return;
             fov = fovDegrees;
-            aspectRatio = aspect;
+            resolution.x = w;
+            resolution.y = h;
             cameraType = Perspective;
             _projectionDirty = true;
         }
-        void perspective(float *fovDegrees, float *aspect) const
+        void perspective(float *fovDegrees, uint32_t *w, uint32_t *h) const
         {
             *fovDegrees = fov;
-            *aspect = aspectRatio;
+            *w = resolution.x;
+            *h = resolution.y;
         }
 
         void ortho(float l, float r, float b, float t)
@@ -110,7 +128,7 @@ namespace render
             {
                 if(cameraType == Perspective)
                 {
-                    _projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+                    _projection = glm::perspective(glm::radians(fov), (float)resolution.x / (float)resolution.y, nearPlane, farPlane);
                 }
                 else if(cameraType == Orthographic)
                 {
