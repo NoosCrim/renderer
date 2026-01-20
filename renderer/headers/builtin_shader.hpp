@@ -6,6 +6,7 @@
 
 namespace render
 {
+    const char* shader_location = "./renderer/shader/processed";
     enum UniformBufferBindingPoint : GLuint
     {
         CAMERA_BINDING_POINT = 0,
@@ -20,7 +21,7 @@ namespace render
         };
         VertexShaderGeneral() : Shader()
         {
-            Shader::operator=(Shader::FromFile(GL_VERTEX_SHADER, "./renderer/shader/processed/general.vert.glsl"));
+            Shader::operator=(Shader::FromFile(GL_VERTEX_SHADER, (std::string{shader_location} + "/general.vert.glsl").c_str()));
         }
     };
     struct FragmentShaderBRDF : Shader
@@ -56,7 +57,7 @@ namespace render
         };
         FragmentShaderBRDF() : Shader()
         {
-            Shader::operator=(Shader::FromFile(GL_FRAGMENT_SHADER, "./renderer/shader/processed/brdf.frag.glsl"));
+            Shader::operator=(Shader::FromFile(GL_FRAGMENT_SHADER, (std::string{shader_location} + "/brdf.frag.glsl").c_str()));
         }
         struct Material
         {
