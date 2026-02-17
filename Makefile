@@ -1,6 +1,6 @@
 C++ := g++
 AR := ar
-COMPILE_FLAGS := -Wall -Wextra -Werror -std=c++20 -g -DRENDER_DEBUG_LEVEL -I. -DGLM_ENABLE_EXPERIMENTAL
+COMPILE_FLAGS := -Wall -Wextra -Werror -std=c++20 -g -O3 -I. -DGLM_ENABLE_EXPERIMENTAL
 OUT := ./out/
 OBJ := $(OUT)obj/
 DEP := $(OUT)dep/

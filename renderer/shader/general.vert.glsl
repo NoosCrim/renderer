@@ -13,6 +13,7 @@ layout(location = INSTANCE_INVERSE_TRANSFORM_IDX) in mat4 inverse_model;
 mat4 viewModel = view * model;
 
 out vec4 frag_view_pos;
+out vec4 frag_world_pos;
 out vec4 frag_pos;
 out vec4 frag_color;
 out vec2 frag_uv;
@@ -28,7 +29,9 @@ layout(binding = 3) uniform sampler2D ORMMap; // Occlusion, Roughness, Metallic
 
 void main()
 {
-    frag_view_pos = viewModel * vec4(pos, 1.f);
+    vec4 worldPos = model * vec4(pos, 1.f);
+    frag_world_pos = worldPos;
+    frag_view_pos = view * worldPos;
     gl_Position = projection * frag_view_pos;
     frag_pos = gl_Position;
     frag_color = COLOR_ENABLED ? color : vec4(1.0f);

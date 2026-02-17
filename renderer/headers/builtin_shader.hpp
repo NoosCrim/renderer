@@ -3,6 +3,7 @@
 #include "OpenGL_utils/buffer.hpp"
 #include "OpenGL_utils/texture.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace render
 {
@@ -41,19 +42,21 @@ namespace render
             struct LightUniformData
             {
                 glm::vec3 ambientLight;
-                float __pad1;
+                float shadowBias;
                 glm::vec3 lightColor;
-                float __pad2;
+                uint32_t shadowEnabled;
                 glm::vec3 view_lightDirection;
+                float __pad3;
+                glm::vec3 world_lightDirection;
             };
             TypedSharedBuffer<LightUniformData> _lightBuffer{1};
         public:
             LightUniformData &uniformData = _lightBuffer[0];
+            
             void Use() const
             {
-                glBindBufferBase(GL_UNIFORM_BUFFER, 1, _lightBuffer);
+                glBindBufferBase(GL_UNIFORM_BUFFER, BRDF_LIGHTING_BINDING_POINT, _lightBuffer);
             }
-
         };
         FragmentShaderBRDF() : Shader()
         {

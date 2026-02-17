@@ -162,7 +162,7 @@ namespace render
         static Image FromFile(TexCompType comp_type, char const *filename, int desired_channels = 0)
         {
             int w, h, comp_n;
-            void *stb_image;
+            void *stb_image = nullptr;
             switch(comp_type)
             {
                 case TexCompType::UNSIGNED_BYTE:
@@ -282,6 +282,10 @@ namespace render
             static TextureMetadata uninit = {0,0,0,0,0,0,0,0};
             return _data ? _data : &uninit;
         }
+        inline GLuint ID() const
+        {
+            return _data ? _data->name : 0;
+        }
         inline operator GLuint() const
         {
             return _data ? _data->name : 0;
@@ -298,9 +302,8 @@ namespace render
     class Texture2D : public Texture
     {
     public:
-        // TODO - add constructor from Image
         Texture2D() = default;
-        Texture2D(Texture2D& other) : Texture(other) {}
+        Texture2D(const Texture2D& other) : Texture(other) {}
         Texture2D(Texture2D&& other) : Texture(std::move(other)) {}
         Texture2D(GLsizei lvls, GLenum gl_in_format,
                   GLsizei comp_n, GLsizei w, GLsizei h):
@@ -315,6 +318,17 @@ namespace render
             glTextureSubImage2D(
                 data()->name, 0, 0, 0, data()->width, data()->width, 
                 (GLenum)compNumToFormat[data()->comp_num], (GLenum)image->comp_type, image->pixels);
+        }
+
+        Texture2D& operator=(const Texture2D& other)
+        {
+            Texture::operator=(other);
+            return *this;
+        }
+        Texture2D& operator=(Texture2D&& other)
+        {
+            Texture::operator=(std::move(other));
+            return *this;
         }
         inline void Load(TexFormat format, TexCompType type, void* pixels, GLint level, GLint x, GLint y, GLsizei w, GLsizei h)
         {

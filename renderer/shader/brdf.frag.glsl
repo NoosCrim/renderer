@@ -1,14 +1,17 @@
 #version 460
 
 #include "general_shared.glsl"
+#include "shadow_map_shared.glsl"
 
 layout(std140, binding = 1) uniform _lightUniforms
 {
     vec3 ambientLight;
-    uint _pad1;
+    float shadowBias;
     vec3 lightColor;
-    float _pad2;
+    uint shadowEnabled;
     vec3 view_lightDirection;
+    float _pad3;
+    vec3 world_lightDirection;
 };
 layout(std140, binding = 2) uniform _materialUniforms
 {
@@ -46,6 +49,7 @@ bool AMBIENT_OCCLUSION_MAP_ENABLED = isMapEnabled(AMBIENT_OCCLUSION_MAP);
 
 
 in vec4 frag_view_pos;
+in vec4 frag_world_pos;
 in vec4 frag_pos;
 in vec4 frag_color;
 in vec2 frag_uv;
@@ -54,6 +58,8 @@ in vec3 frag_view_tangent;
 in vec3 frag_view_bitangent;
 
 out vec4 out_color;
+
+
 
 void main()
 {
@@ -115,11 +121,12 @@ void main()
     }
 
     // temporary phong-like lighting
+    float shadow = (shadowEnabled != 0) ? CalculateShadow(frag_world_pos, shadowBias) : 0.f;
     float dF = clamp(dot(final_normal, view_lightDirection), 0.f, 1.f);
     vec3 dL = dF * lightColor * roughness;
     vec3 halfVector = normalize(-normalize(vec3(frag_view_pos)) + view_lightDirection);
     float sF = pow(clamp(dot(final_normal, halfVector), 0.f, 1.f), 256.f * metallic);
     vec3 sL = sF * lightColor * (1.0f - roughness);
     vec3 aL = ambientLight * ambient_occlusion;
-    out_color = vec4(sL + (dL + aL) * vec3(color), color.a);
+    out_color = vec4(sL + ((1.0 - shadow) * dL + aL) * vec3(color), color.a);
 }

@@ -1,6 +1,6 @@
 .PHONY: renderer shaders renderer_demo run_renderer_demo all
 
-RENDERER_SHADERS:=./renderer/shader/processed/general.vert.glsl ./renderer/shader/processed/brdf.frag.glsl
+RENDERER_SHADERS:=$(patsubst ./renderer/shader/%.glsl, ./renderer/shader/processed/%.glsl, $(wildcard ./renderer/shader/*.glsl))
 
 shaders: $(RENDERER_SHADERS)
 
@@ -30,8 +30,9 @@ $(RENDERER_LIBRARIAN) : ./renderer/renderer.mk
 	@echo "save" >> $(RENDERER_LIBRARIAN)
 	@echo "end" >> $(RENDERER_LIBRARIAN)
 
-$(RENDERER_LIB) : $(RENDERER_LIBRARIAN) $(RENDERER_LIBS_TO_MERGE) $(RENDERER_SHADERS)
+$(RENDERER_LIB) : $(RENDERER_LIBRARIAN) $(RENDERER_LIBS_TO_MERGE) $(RENDERER_SHADERS) $(RENDERER_OBJ)
 	@mkdir -p $(dir $@)
+	@echo RENDERER_OBJ = $(RENDERER_OBJ)
 	rm -f @$
 	ar -M < $(RENDERER_LIBRARIAN)
 

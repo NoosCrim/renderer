@@ -73,14 +73,14 @@ int main()
     // camera setup
     render::Camera camera;
     camera.perspective(60, 1280, 720);
-    camera.transform.position({0.f, 2.5f, 0.f});
-    camera.transform.orientation(glm::quat(glm::vec3(glm::radians(-45.f), 0.f, 0.f)));
+    camera.transform.position({0.f, 2.165063509f, 5.f});
+    camera.transform.orientation(glm::quat(glm::vec3(glm::radians(-30.f), 0.f, 0.f)));
     camera.projection();
     camera.transform.matrix();
     camera.transform.inverse();
     camera.Use();
 
-    // mesh setup
+    // mesh setup - cube
     render::TypedSharedBuffer<render::InstanceData> cubeInstanceBuffer{1};
     render::Transform cubeTransform{cubeInstanceBuffer, &cubeInstanceBuffer.data()->model, &cubeInstanceBuffer.data()->inverse_model};
     render::Mesh cubeMesh(cubeData::vertCount, cubeData::verts);
@@ -88,15 +88,35 @@ int main()
     cubeMesh.initNormals(cubeData::verts);
     cubeMesh.initUVs(cubeData::UVs);
 
-    cubeTransform.position({0, 0, -2.5f});
+    cubeTransform.position({0.0f, 0.0f, 0.f});
     cubeTransform.inverse();
     cubeTransform.matrix();
 
+    // mesh setup - floor plane
+    render::TypedSharedBuffer<render::InstanceData> floorInstanceBuffer{1};
+    render::Transform floorTransform{floorInstanceBuffer, &floorInstanceBuffer.data()->model, &floorInstanceBuffer.data()->inverse_model};
+    render::Mesh floorMesh(planeData::vertCount, planeData::verts);
+    floorMesh.initElements(planeData::elemCount, planeData::indices);
+    floorMesh.initUVs(planeData::UVs);
+
+    floorTransform.position({0.f, -2.f, 0.f});
+    floorTransform.orientation(glm::quat(glm::vec3(glm::radians(-90.f), 0.f, 0.f)));
+    floorTransform.scale({10.f, 10.f, 10.f});
+    floorTransform.inverse();
+    floorTransform.matrix();
+
     // lighting setup
     render::FragmentShaderBRDF::Lighting lighting;
-    lighting.uniformData.ambientLight = glm::vec3{0.1f, 0.1f, 0.1f};
+    lighting.uniformData.ambientLight = glm::vec3{0.15f, 0.15f, 0.15f};
     lighting.uniformData.lightColor = glm::vec3{1.f, 1.f, 1.f};
-    lighting.uniformData.view_lightDirection = glm::normalize(glm::vec3{1.f, 1.f, 1.f});
+    glm::vec3 lightDir = glm::normalize(glm::vec3{1.f, 1.f, 1.f});
+    lighting.uniformData.view_lightDirection = lightDir;
+    lighting.uniformData.world_lightDirection = lightDir;
+    
+    // shadow setup
+    render::ShadowMapPass shadow{2048};
+    lighting.uniformData.shadowBias = shadow.bias;
+    lighting.uniformData.shadowEnabled = true;
 
     // texture setup
     render::Image bricksAlbedoImg = render::Image::FromFile(render::TexCompType::UNSIGNED_BYTE, "./renderer/demo/assets/bricks/Bricks101_1K-PNG_Color.png", 3);
@@ -119,27 +139,56 @@ int main()
     material.textures[render::FragmentShaderBRDF::ROUGHNESS_MAP_UNIT] = bricksRoughness;
     material.textures[render::FragmentShaderBRDF::AMBIENT_OCCLUSION_MAP_UNIT] = bricksAO;
 
+    // floor material (simple white)
+    render::FragmentShaderBRDF::Material floorMaterial;
+    floorMaterial.uniformData.color_mod = {0.8f, 0.8f, 0.8f, 1.0f};
+    floorMaterial.uniformData.roughness_mod = 0.9f;
+    floorMaterial.uniformData.metallic_mod = 0.0f;
+
     // shader creation
     render::ShaderProgramBRDF shaderBRDF;
 
-    // setting lighting to use 
-    lighting.Use();
-
-    // setting shader to use
-    shaderBRDF.Use();
-
     while(!glfwWindowShouldClose(window))
     {
-        glfwPollEvents();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // ---- PASS 1: Shadow depth pass ----
+        shadow.BeginPass(lightDir, glm::vec3(0.f, 0.f, -2.5f), 15.0f);
+        
+        glClear(GL_DEPTH_BUFFER_BIT); // clears the shadow FBO
+        // Render all shadow-casting geometry (depth only)
+        cubeMesh.Draw(cubeInstanceBuffer);
+        floorMesh.Draw(floorInstanceBuffer);
+        
+        
+        // ---- PASS 2: Main rendering pass ----
+        int wWidth, wHeight;
+        glfwGetWindowSize(window, &wWidth, &wHeight);
+        camera.resolution = {wWidth, wHeight};
+        camera.perspective(camera.fov, wWidth, wHeight);
 
+        render::Framebuffer::Unbind(); // bind default framebuffer
+        glViewport(0, 0, wWidth, wHeight);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clears the screen
+        shaderBRDF.Use();
+        camera.Use();
+        lighting.Use();
+        shadow.Use();
+
+        // Draw cube with brick material
         material.Use();
         cubeMesh.Draw(cubeInstanceBuffer);
+
+        // Draw floor with simple material
+        floorMaterial.Use();
+        floorMesh.Draw(floorInstanceBuffer);
+
+        // update
+        glfwPollEvents();
         cubeTransform.orientation(glm::quat({0.f, glm::radians(0.2f), 0.f}) * cubeTransform.orientation());
         cubeTransform.inverse();
         cubeTransform.matrix();
 
         glfwSwapBuffers(window);
     }
+
     return 0;
 }

@@ -3,6 +3,8 @@
 #endif
 #include "headers/builtin_shader.hpp"
 #include "headers/camera.hpp"
+#include "headers/framebuffers.hpp"
 #include "headers/mesh.hpp"
+#include "headers/shadow.hpp"
 #include "headers/transform.hpp"
 #include "OpenGL_utils/OpenGL_utils.hpp"
